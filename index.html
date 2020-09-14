@@ -43,6 +43,8 @@
             var data = response.getDataTable();
             if (data.getValue(0, 0) == null) return;
 
+            data.removeRows(0, data.getNumberOfRows() - 100);
+
             var wrapper = new google.visualization.ChartWrapper({
                 chartType: 'LineChart',
                 dataTable: data,
