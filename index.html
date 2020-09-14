@@ -12,13 +12,24 @@
 
 <script type="text/javascript">
     function drawCharts() {
-        drawChartForBench('stage1-behavior-tests', 'std_gpa');
-        drawChartForBench('stage1-std-tests', 'std_gpa');
-        drawChartForBench('self-hosted-parser', 'std_gpa');
-        drawChartForBench('translate-c-windows-h', 'std_gpa');
-        drawChartForBench('zig-fmt', 'std_gpa');
-        drawChartForBench('arena-allocator', 'std_gpa');
-        drawChartForBench('std-hash-map', 'std_gpa');
+        $.get("https://raw.githubusercontent.com/ziglang/gotta-go-fast/master/benchmarks/manifest.json", function (json) {
+            const parsed = JSON.parse(json);
+
+            console.log(parsed);
+            for (var bench in parsed) {
+                if (parsed.hasOwnProperty(bench)) {
+                    var elem = document.createElement("div");
+                    elem.id = bench + "-std_gpa-chart";
+                    document.body.appendChild(elem);
+                    var elem2 = document.createElement("div");
+                    elem2.id = bench + "-libc-chart";
+                    document.body.appendChild(elem2);
+
+                    drawChartForBench(bench, 'std_gpa');
+                    drawChartForBench(bench, 'libc');    
+                }
+            }
+        });
     }
 
     function drawChartForBench(bench, alloc) {
@@ -30,6 +41,7 @@
             if (response.isError()) return;
 
             var data = response.getDataTable();
+            if (data.getValue(0, 0) == null) return;
 
             var wrapper = new google.visualization.ChartWrapper({
                 chartType: 'LineChart',
@@ -86,15 +98,8 @@
     div.google-visualization-tooltip {
         background-color: #222222
     }
-    div.google-visualization-tooltip > ul > li > span {
+
+    div.google-visualization-tooltip>ul>li>span {
         color: white !important
     }
 </style>
-
-<div id="stage1-behavior-tests-std_gpa-chart"></div>
-<div id="stage1-std-tests-std_gpa-chart"></div>
-<div id="self-hosted-parser-std_gpa-chart"></div>
-<div id="translate-c-windows-h-std_gpa-chart"></div>
-<div id="zig-fmt-std_gpa-chart"></div>
-<div id="arena-allocator-std_gpa-chart"></div>
-<div id="std-hash-map-std_gpa-chart"></div>
