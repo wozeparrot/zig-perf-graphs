@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="jquery.csv.min.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+</head>
+
+<script type="text/javascript">
+    google.load('visualization', '49', {});
+</script>
+
+<script type="text/javascript">
+    function drawCharts() {
+        drawChartForBench('stage1-behavior-tests', 'std_gpa');
+        drawChartForBench('stage1-std-tests', 'std_gpa');
+        drawChartForBench('self-hosted-parser', 'std_gpa');
+        drawChartForBench('translate-c-windows-h', 'std_gpa');
+        drawChartForBench('zig-fmt', 'std_gpa');
+        drawChartForBench('arena-allocator', 'std_gpa');
+        drawChartForBench('std-hash-map', 'std_gpa');
+    }
+
+    function drawChartForBench(bench, alloc) {
+        var query = new google.visualization.Query("https://docs.google.com/spreadsheets/d/1Up7WXdC3cvuHyMq5nKNmTj6pCxH2MxSohAKGuM6zGpg/gviz/tq?sheet=RawData");
+        query.setQuery("select D, H / W, S / AH where (B = '" + bench + "') and (C = '" + alloc + "') and E is null");
+        query.send(handleQuery);
+
+        function handleQuery(response) {
+            if (response.isError()) return;
+
+            var data = response.getDataTable();
+
+            var wrapper = new google.visualization.ChartWrapper({
+                chartType: 'LineChart',
+                dataTable: data,
+                containerId: bench + "-" + alloc + '-chart',
+                options: {
+                    title: bench + " - " + alloc,
+                    height: 320,
+                    titleColor: "#f7a41d",
+                    backgroundColor: "#111111",
+                    hAxis: {
+                        textPosition: "none"
+                    },
+                    legend: {
+                        textStyle: {
+                            color: "#ffffff",
+                        }
+                    },
+                    series: {
+                        0: {
+                            labelInLegend: "wall_time",
+                        },
+                        1: {
+                            labelInLegend: "max_rss",
+                        }
+                    },
+                    tooltip: {
+                        isHtml: true,
+                        trigger: 'selection',
+                    },
+                }
+            });
+
+            google.visualization.events.addListener(wrapper, 'ready', onReady);
+
+            function onReady() {
+                wrapper.getChart().setAction({
+                    id: 'tooltip',
+                    text: 'Go to Commit',
+                    action: function () {
+                        selection = wrapper.getChart().getSelection();
+                        window.open("https://github.com/ziglang/zig/commit/" + data.getValue(selection[0].row, 0));
+                    }
+                });
+            }
+
+            wrapper.draw();
+        }
+    }
+    google.charts.setOnLoadCallback(drawCharts);
+</script>
+
+<style>
+    div.google-visualization-tooltip {
+        background-color: #222222
+    }
+    div.google-visualization-tooltip > ul > li > span {
+        color: white !important
+    }
+</style>
+
+<div id="stage1-behavior-tests-std_gpa-chart"></div>
+<div id="stage1-std-tests-std_gpa-chart"></div>
+<div id="self-hosted-parser-std_gpa-chart"></div>
+<div id="translate-c-windows-h-std_gpa-chart"></div>
+<div id="zig-fmt-std_gpa-chart"></div>
+<div id="arena-allocator-std_gpa-chart"></div>
+<div id="std-hash-map-std_gpa-chart"></div>
