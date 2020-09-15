@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="jquery.csv.min.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 </head>
@@ -11,11 +11,14 @@
 </script>
 
 <script type="text/javascript">
+    var limit = 0;
+    var charts = [];
+
     function drawCharts() {
         $.get("https://raw.githubusercontent.com/ziglang/gotta-go-fast/master/benchmarks/manifest.json", function (json) {
             const parsed = JSON.parse(json);
 
-            console.log(parsed);
+            var i = 0;
             for (var bench in parsed) {
                 if (parsed.hasOwnProperty(bench)) {
                     var elem = document.createElement("div");
@@ -25,14 +28,16 @@
                     elem2.id = bench + "-libc-chart";
                     document.body.appendChild(elem2);
 
-                    drawChartForBench(bench, 'std_gpa');
-                    drawChartForBench(bench, 'libc');    
+                    drawChartForBench(bench, 'std_gpa', i);
+                    i += 1;
+                    drawChartForBench(bench, 'libc', i);
+                    i += 1;
                 }
             }
         });
     }
 
-    function drawChartForBench(bench, alloc) {
+    function drawChartForBench(bench, alloc, i) {
         var query = new google.visualization.Query("https://docs.google.com/spreadsheets/d/1Up7WXdC3cvuHyMq5nKNmTj6pCxH2MxSohAKGuM6zGpg/gviz/tq?sheet=RawData");
         query.setQuery("select D, H / W, S / AH where (B = '" + bench + "') and (C = '" + alloc + "') and E is null");
         query.send(handleQuery);
@@ -40,12 +45,16 @@
         function handleQuery(response) {
             if (response.isError()) return;
 
-            var data = response.getDataTable();
-            if (data.getValue(0, 0) == null) return;
+            var rdata = response.getDataTable();
+            if (rdata.getValue(0, 0) == null) return;
 
-            data.removeRows(0, data.getNumberOfRows() - 150);
+            var data = rdata.clone();
 
-            var wrapper = new google.visualization.ChartWrapper({
+            if (limit < data.getNumberOfRows() && limit !== 0) {
+                data.removeRows(0, data.getNumberOfRows() - limit);
+            }
+
+            charts[i] = [new google.visualization.ChartWrapper({
                 chartType: 'LineChart',
                 dataTable: data,
                 containerId: bench + "-" + alloc + '-chart',
@@ -76,22 +85,22 @@
                         trigger: 'selection',
                     },
                 }
-            });
+            }), rdata];
 
-            google.visualization.events.addListener(wrapper, 'ready', onReady);
+            google.visualization.events.addListener(charts[i][0], 'ready', onReady);
 
             function onReady() {
-                wrapper.getChart().setAction({
+                charts[i][0].getChart().setAction({
                     id: 'tooltip',
                     text: 'Go to Commit',
                     action: function () {
-                        selection = wrapper.getChart().getSelection();
+                        selection = charts[i][0].getChart().getSelection();
                         window.open("https://github.com/ziglang/zig/commit/" + data.getValue(selection[0].row, 0));
                     }
                 });
             }
 
-            wrapper.draw();
+            charts[i][0].draw();
         }
     }
     google.charts.setOnLoadCallback(drawCharts);
@@ -99,13 +108,38 @@
 
 <style>
     div.google-visualization-tooltip {
-        background-color: #222222
+        background-color: #222222;
     }
 
     div.google-visualization-tooltip>ul>li>span {
-        color: white !important
+        color: white !important;
     }
     body {
-        background-color: #111111
+        background-color: #111111;
+    }
+
+    input {
+        background-color: #222222;
+        border: 2px solid #f7a41d;
+        color: white;
+        padding: 6px 10px;
     }
 </style>
+
+<input id="limit" type="number" placeholder="Limit Data Points" step="10">
+<script type="text/javascript">
+    limit = Number($("#limit").val());
+
+    $("#limit").on('input', function() {
+        limit = Number($("#limit").val());
+        
+        charts.forEach(chart => {
+            var data = chart[1].clone();
+            if (limit < data.getNumberOfRows() && limit !== 0) {
+                data.removeRows(0, data.getNumberOfRows() - limit);
+            }
+            chart[0].setDataTable(data);
+            chart[0].draw();
+        });
+    });
+</script>
