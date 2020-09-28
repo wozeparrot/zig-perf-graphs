@@ -21,6 +21,7 @@
             var i = 0;
             for (var bench in parsed) {
                 if (parsed.hasOwnProperty(bench)) {
+                    console.log(bench);
                     var elem = document.createElement("div");
                     elem.id = bench + "-std_gpa-chart";
                     document.body.appendChild(elem);
@@ -39,11 +40,14 @@
 
     function drawChartForBench(bench, alloc, i) {
         var query = new google.visualization.Query("https://docs.google.com/spreadsheets/d/1Up7WXdC3cvuHyMq5nKNmTj6pCxH2MxSohAKGuM6zGpg/gviz/tq?sheet=RawData");
-        query.setQuery("select D, H / W, S / AH, G / V, where (B = '" + bench + "') and (C = '" + alloc + "') and E is null");
+        query.setQuery("select D, H / W, S / AH where (B = '" + bench + "') and (C = '" + alloc + "') and E is null");
         query.send(handleQuery);
 
         function handleQuery(response) {
-            if (response.isError()) return;
+            if (response.isError()) {
+                console.log(response);
+                return;
+            }
 
             var rdata = response.getDataTable();
             if (rdata.getValue(0, 0) == null) return;
