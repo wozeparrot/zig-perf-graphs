@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 
 <head>
+    <meta charset="UTF-8">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="jquery.csv.min.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 </head>
 
@@ -39,7 +39,7 @@
 
     function drawChartForBench(bench, alloc, i) {
         var query = new google.visualization.Query("https://docs.google.com/spreadsheets/d/1Up7WXdC3cvuHyMq5nKNmTj6pCxH2MxSohAKGuM6zGpg/gviz/tq?sheet=RawData");
-        query.setQuery("select D, H / W, S / AH where (B = '" + bench + "') and (C = '" + alloc + "') and E is null");
+        query.setQuery("select D, H / W, S / AH, G / V, where (B = '" + bench + "') and (C = '" + alloc + "') and E is null");
         query.send(handleQuery);
 
         function handleQuery(response) {
@@ -74,11 +74,14 @@
                     },
                     series: {
                         0: {
-                            labelInLegend: "wall_time",
+                            labelInLegend: "wall_time_mean",
                         },
                         1: {
                             labelInLegend: "max_rss",
-                        }
+                        },
+                        2: {
+                            labelInLegend: "wall_time_median",
+                        },
                     },
                     tooltip: {
                         isHtml: true,
